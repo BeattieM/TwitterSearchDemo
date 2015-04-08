@@ -1,0 +1,17 @@
+<h2>Search Term: <%= @search_term %></h2>
+<h3>Top Associated Twitter Links</h3>
+<% count = 0 %>
+<% if @results.nil? %>
+ No Results Found
+<% else %>
+	<% @results.each do |result| %>
+	<% if result['count'] != count %>
+		<% count = result['count'] %>
+		<span><b>Count: <%= result['count'] %></b></span>
+	<% end %>
+		<div>
+			<span><%= result['url'] %></span><br />
+			<span>Last Found At: <%= DateTime.strptime(result['updated_at'], "%Y-%m-%d %H:%M:%S").strftime("%B %d, %Y %I:%M:%S %p") %></span><br />
+		</div><br />
+	<% end %>
+<% end %>
