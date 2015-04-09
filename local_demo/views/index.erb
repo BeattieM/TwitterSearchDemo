@@ -11,6 +11,9 @@
 	<% end %>
 		<div>
 			<span><%= result['url'] %></span><br />
+			<span><%= result['site_title'] %></span><br />
+			<span><%= result['site_desc'] %></span><br />
+			<span><%= result['image_url'] %></span><br />
 			<span>Last Found At: <%= DateTime.strptime(result['updated_at'], "%Y-%m-%d %H:%M:%S").strftime("%B %d, %Y %I:%M:%S %p") %></span><br />
 		</div><br />
 	<% end %>

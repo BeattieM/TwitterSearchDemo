@@ -12,7 +12,7 @@ class Demo < Sinatra::Base
     dbname = params[:query].strip.gsub(/[^0-9A-Za-z.\-]/, '_')
     @error = MicroMysql.new("DESCRIBE #{dbname}").call['error']
     if @error.include? "doesn't exist"
-      MicroMysql.new("create table #{dbname} (url varchar(255) not null,last_tweet_id varchar(255) not null, count int default 1, description varchar(255), created_at datetime default current_timestamp, updated_at datetime default current_timestamp);").call
+      MicroMysql.new("create table #{dbname} (url varchar(255) not null,last_tweet_id varchar(255) not null, count int default 1, description varchar(255), image_url varchar(255), site_title varchar(255), site_desc varchar(255), created_at datetime default current_timestamp, updated_at datetime default current_timestamp);").call
       MicroMysql.new("INSERT INTO query_list (db,term) VALUES(\'#{dbname}\',\'#{params[:query]}\');").call
       SearchDemo.new(dbname, params[:query], 200, 1).run
     end
@@ -164,10 +164,54 @@ class SearchDemo
           query = "UPDATE #{database_table} SET count=#{result['count'].to_i + 1}, last_tweet_id=\'#{tweet['id']}\', updated_at=\'#{Time.now}\', description=\'#{description}\' WHERE url=\'#{stripped_url}\';"
           MicroMysql.new(query).call
         else
-          query = "INSERT INTO #{database_table} (url,last_tweet_id,description,created_at,updated_at) VALUES(\'#{stripped_url}\', \'#{tweet['id']}\', \'#{description}\', \'#{Time.now}\', \'#{Time.now}\');"
+          picture_url = ""
+          picture_info = CanonicalPicture.new(stripped_url).call
+          if !picture_info['url'].nil?
+            picture_url = picture_info['url']
+          end
+          site_title = ""
+          site_description = ""
+          site_info = SiteScraper.new(stripped_url).call
+          if !site_info['title'].nil?
+            site_title = site_info['title'].gsub("'","\\\\'")
+            site_description = site_info['description'].gsub("'","\\\\'")
+          end
+          query = "INSERT INTO #{database_table} (url,last_tweet_id,description,image_url,site_title,site_desc,created_at,updated_at) VALUES(\'#{stripped_url}\', \'#{tweet['id']}\', \'#{description}\', \'#{picture_url}\', \'#{site_title}\', \'#{site_description}\', \'#{Time.now}\', \'#{Time.now}\');"
           MicroMysql.new(query).call
         end
       end
     end 
+  end
+end
+
+class CanonicalPicture < MicroWrapper
+  def initialize(url)
+    @client_address = "http://localhost:49999"
+
+    @image = "cloudspace/go-canonical-picture"
+    @tag = "0.5.3"
+    @command = "/canonical-picture"
+    @command_args = [
+      "#{url}"
+    ]
+  end
+  def call
+    MicroWrapper.new(image, tag, client_address).call(command, command_args)
+  end
+end
+
+class SiteScraper < MicroWrapper
+  def initialize(url)
+    @client_address = "http://localhost:49999"
+
+    @image = "cloudspace/go-site-scraper"
+    @tag = "0.2.1"
+    @command = "/scraper"
+    @command_args = [
+      "#{url}"
+    ]
+  end
+  def call
+    MicroWrapper.new(image, tag, client_address).call(command, command_args)
   end
 end
